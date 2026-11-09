@@ -1,111 +1,105 @@
 # 🎧 Model Card: Music Recommender Simulation
 
-## 1. Model Name  
+## 1. Model Name
 
-Give your model a short, descriptive name.  
-Example: **VibeFinder 1.0**  
+**VibeFinder 1.0**
 
----
-
-## 2. Intended Use  
-
-Describe what your recommender is designed to do and who it is for. 
-
-Prompts:  
-
-- What kind of recommendations does it generate  
-- What assumptions does it make about the user  
-- Is this for real users or classroom exploration  
+This is a small classroom recommender. The name is just a label for the scoring recipe in this project.
 
 ---
 
-## 3. How the Model Works  
+## 2. Intended Use
 
-Explain your scoring approach in simple language.  
+The goal is to turn one listener profile into a ranked list of songs and to show why each song scored the way it did.
 
-Prompts:  
+VibeFinder 1.0 is for a student exploring how a content-based recommender works. It assumes the listener can name one favorite genre, one favorite mood, a target energy between 0 and 1, and whether they like acoustic music. It returns the top 5 songs in a 20-song catalog, with a score and short reasons.
 
-- What features of each song are used (genre, energy, mood, etc.)  
-- What user preferences are considered  
-- How does the model turn those into a score  
-- What changes did you make from the starter logic  
-
-Avoid code here. Pretend you are explaining the idea to a friend who does not program.
+It is not for a real music service. It should not be used to choose what a real person hears, to decide which artists get promoted, or to judge whether a song is good. The songs are made-up examples. The score is a match to a profile, not a measure of quality.
 
 ---
 
-## 4. Data  
+## 3. How the Model Works
 
-Describe the dataset the model uses.  
+Each song starts at zero. A matching genre adds 2.0 points. A matching mood adds 1.0 point. Energy is a closeness score: the song can earn up to 1.5 points when its energy equals the target, and it earns less as the gap grows. A song that is too high does not beat a song that is the same distance too low. Acoustic taste nudges the score by a fraction of a point, up or down.
 
-Prompts:  
-
-- How many songs are in the catalog  
-- What genres or moods are represented  
-- Did you add or remove data  
-- Are there parts of musical taste missing in the dataset  
+The program scores every song, sorts from highest to lowest, and keeps five. The starter code returned the first songs in the file. This version scores the whole catalog and can explain each pick with strings such as `genre match (+2.0)`.
 
 ---
 
-## 5. Strengths  
+## 4. Data
 
-Where does your system seem to work well  
+The catalog has 20 songs. The starter file had 10, and I added 10 more. The new genres include folk, r&b, metal, country, electronic, blues, latin, classical, and hip hop. The new moods include sad, romantic, angry, nostalgic, dreamy, and peaceful.
 
-Prompts:  
+Each song has a title, an artist, a genre, a mood, energy, tempo, valence, danceability, and acousticness. The score uses genre, mood, energy, and acousticness. Tempo, valence, and danceability are saved and then ignored.
 
-- User types for which it gives reasonable results  
-- Any patterns you think your scoring captures correctly  
-- Cases where the recommendations matched your intuition  
+The limits are easy to see. There is one rock song and two pop songs. The only sad songs are slow. There is no listening history and no lyrics. The songs are not from a real chart.
 
 ---
 
-## 6. Limitations and Bias 
+## 5. Strengths
 
-Where the system struggles or behaves unfairly. 
+High-Energy Pop puts Sunrise City first. That song is pop, happy, and close to energy 0.90, so the result matches the profile.
 
-Prompts:  
+Chill Lofi puts Library Rain first. Its energy is 0.35, the same as the target, and it is lofi, chill, and acoustic. Midnight Coding, the other chill lofi song, is second.
 
-- Features it does not consider  
-- Genres or moods that are underrepresented  
-- Cases where the system overfits to one preference  
-- Ways the scoring might unintentionally favor some users  
+Deep Intense Rock puts Storm Runner first with 4.9, well ahead of Gym Hero at 3.0. Storm Runner is the only rock song, and it is intense with energy 0.91.
 
----
-
-## 7. Evaluation  
-
-How you checked whether the recommender behaved as expected. 
-
-Prompts:  
-
-- Which user profiles you tested  
-- What you looked for in the recommendations  
-- What surprised you  
-- Any simple tests or comparisons you ran  
-
-No need for numeric metrics unless you created some.
+The reasons add up to the printed score. For Sunrise City on the pop profile, 2.0 + 1.0 + 1.4 + 0.3 = 4.7. That made the list easy to trust when it was right.
 
 ---
 
-## 8. Future Work  
+## 6. Limitations and Bias
 
-Ideas for how you would improve the model next.  
+The clearest weakness is that a genre bonus plus a hole in the catalog can erase a mood request. Restless Sad asks for pop songs that feel sad at energy 0.90, and the catalog has no song that is pop and sad. The only sad songs are Blue Window (folk, energy 0.30) and Rain On The Platform (blues, energy 0.33), so they earn the +1.0 mood point and then lose on energy. Gym Hero is intense, not sad, but the +2.0 pop bonus and a near-perfect energy score give it 4.0 and first place, while Rain On The Platform scores 1.3 and lands at rank 10. Doubling the energy weight in the sensitivity run pushed those sad songs even lower, to ranks 11 and 12, so a bigger energy weight did not fix the hole.
 
-Prompts:  
-
-- Additional features or preferences  
-- Better ways to explain recommendations  
-- Improving diversity among the top results  
-- Handling more complex user tastes  
+Other limits showed up too. `indie pop` does not count as `pop`, so Rooftop Lights misses the genre bonus. Equal scores are broken by title, which is why Iron Horizon appears as the fifth High-Energy Pop song ahead of Storm Runner at the same 1.9. Chill Lofi also ranks two LoRoom songs in a row.
 
 ---
 
-## 9. Personal Reflection  
+## 7. Evaluation
 
-A few sentences about your experience.  
+I tested four profiles with `python -m src.main`: High-Energy Pop (pop, happy, energy 0.90, acoustic no), Chill Lofi (lofi, chill, energy 0.35, acoustic yes), Deep Intense Rock (rock, intense, energy 0.90, acoustic no), and Restless Sad (pop, sad, energy 0.90, acoustic no). I looked at the top 5 titles, the scores, and the reason strings. I also halved the genre weight and doubled the energy weight, compared the lists, and put the original weights back. `python -m pytest` checks loading, the genre and mood points, energy closeness, sort order, and the `k` limit.
 
-Prompts:  
+What surprised me is that Restless Sad and Deep Intense Rock returned the same five songs in a different order. I changed the genre from rock to pop and the mood from intense to sad, and a sad song still did not appear. The shared energy target of 0.90, plus a dislike of acoustic music, kept the loud songs in the list.
 
-- What you learned about recommender systems  
-- Something unexpected or interesting you discovered  
-- How this changed the way you think about music recommendation apps  
+High-Energy Pop compared with Chill Lofi: the lists do not share a title. Pop opens with Sunrise City (4.7) and Gym Hero (4.0). Lofi opens with Library Rain (4.9) and Midnight Coding (4.6). The profiles disagree on genre, mood, energy, and acoustic taste, so the recipe points at opposite ends of the catalog. That split makes sense.
+
+High-Energy Pop compared with Deep Intense Rock: Sunrise City leads the pop list because it is happy pop near energy 0.90. Storm Runner leads the rock list at 4.9 because it is intense rock at energy 0.91. Gym Hero is on each list. The pop profile pays it for genre, and the rock profile pays it for the intense mood. The different winners make sense because the genre bonus is large, and the shared energy target explains the overlap.
+
+High-Energy Pop compared with Restless Sad: genre, energy, and acoustic taste stay the same, and only the mood changes from happy to sad. The winner changes from Sunrise City (4.7, with a mood match) to Gym Hero (4.0, with no mood match). No sad song enters the top 5. The score math explains the swap, and it also shows the hole in the catalog.
+
+Chill Lofi compared with Deep Intense Rock: there is no shared title. Library Rain is a slow acoustic lofi match at 4.9. Storm Runner is a loud rock match at 4.9. One target energy is 0.35 and the other is 0.90, and the acoustic preference is flipped. A strong song for one profile is a weak song for the other. That distance makes sense.
+
+Chill Lofi compared with Restless Sad: there is no shared title. Library Rain is slow, acoustic, and lofi. Gym Hero is fast, not acoustic, and pop. All four preferences differ, so the lists should not look alike. They do not.
+
+Deep Intense Rock compared with Restless Sad: the top 5 titles are the same five songs, ordered differently. Storm Runner is first for rock (4.9) because genre and mood match. It falls to fourth for Restless Sad (1.9) because those bonuses disappear. Gym Hero and Sunrise City rise on the sad list only because they are pop and close to energy 0.90. The reorder makes sense. The missing sad songs do not.
+
+---
+
+## 8. Future Work
+
+I would use tempo or valence in the score. Those columns are already in the file, and they could separate two songs that share a genre and a mood.
+
+I would treat a near genre as a partial match. Rooftop Lights is tagged `indie pop`, so a pop listener gets no genre points for it.
+
+I would add a penalty when the top list repeats an artist or a genre. Chill Lofi currently places Midnight Coding and Focus Flow, two LoRoom songs, in a row.
+
+---
+
+## 9. Personal Reflection
+
+### What was your biggest learning moment?
+
+My biggest learning moment was the Restless Sad run. I thought a sad mood would pull sad songs to the top. It did not. Gym Hero, an intense pop song, scored 4.0 and won, and the sad songs stayed at ranks 10 and 11. I could see why once I added the points: genre is worth 2.0, mood is worth 1.0, and I never added a sad pop song with high energy. The list was following my recipe and my file, not a hidden sense of mood.
+
+### How did using AI tools help you, and when did you need to double-check them?
+
+An AI coding assistant helped me draft the scoring function, the command-line layout, and the tests. I still double-checked the work. I ran `python -m src.main` and `python -m pytest`, and I added the printed reasons by hand. Sunrise City's 2.0 + 1.0 + 1.4 + 0.3 really is 4.7. I also did not trust the idea that a bigger energy weight would help the sad profile. The new ranks showed the opposite, so I put the original weights back.
+
+### What surprised you about how simple algorithms can still feel like recommendations?
+
+The Chill Lofi list felt like a real playlist: Library Rain, then Midnight Coding, then another lofi track. The program does not understand music. It only matches genre, mood, energy, and acousticness. It felt personal because those tags are the same words I would use to describe the songs. The simple points were enough to imitate a taste, as long as the tags and the weights agreed.
+
+### What would you try next?
+
+I would add the tempo and valence columns to the score, since they are already loaded and unused. I would also try a softer genre match so `indie pop` is not a total miss for a pop listener, and a penalty so the chill list does not stack two LoRoom songs. The weight experiment taught me to print the before and after lists before I keep a change.

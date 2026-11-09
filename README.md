@@ -97,42 +97,144 @@ tests/test_recommender.py .........                                      [100%]
 
 ## Sample Recommendation Output
 
-Paste a sample of your recommender's output here as a text block so a reader can see what it produces:
+These blocks are copied from a real `python -m src.main` run. The program first prints `Loaded songs: 20`.
 
-```
-# e.g.:
-# User profile: genre=indie, mood=chill, energy=low
-# Recommendations:
-#   1. ...
-#   2. ...
-#   3. ...
+### High-Energy Pop
+
+```text
+Profile: High-Energy Pop
+Preferences: genre=pop, mood=happy, energy=0.90, likes_acoustic=no
+1. Sunrise City — Neon Echo
+   Score: 4.7
+   Reasons: genre match (+2.0); mood match (+1.0); energy closeness (+1.4); acoustic preference (+0.3)
+2. Gym Hero — Max Pulse
+   Score: 4.0
+   Reasons: genre match (+2.0); energy closeness (+1.5); acoustic preference (+0.5)
+3. Carnival Lights — Sol Mar
+   Score: 2.7
+   Reasons: mood match (+1.0); energy closeness (+1.4); acoustic preference (+0.3)
+4. Rooftop Lights — Indigo Parade
+   Score: 2.5
+   Reasons: mood match (+1.0); energy closeness (+1.3); acoustic preference (+0.2)
+5. Iron Horizon — Grave Circuit
+   Score: 1.9
+   Reasons: energy closeness (+1.4); acoustic preference (+0.5)
 ```
 
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or demo video link here -->
+### Chill Lofi
+
+```text
+Profile: Chill Lofi
+Preferences: genre=lofi, mood=chill, energy=0.35, likes_acoustic=yes
+1. Library Rain — Paper Lanterns
+   Score: 4.9
+   Reasons: genre match (+2.0); mood match (+1.0); energy closeness (+1.5); acoustic preference (+0.4)
+2. Midnight Coding — LoRoom
+   Score: 4.6
+   Reasons: genre match (+2.0); mood match (+1.0); energy closeness (+1.4); acoustic preference (+0.2)
+3. Focus Flow — LoRoom
+   Score: 3.7
+   Reasons: genre match (+2.0); energy closeness (+1.4); acoustic preference (+0.3)
+4. Pine Smoke — Cedar Line
+   Score: 2.8
+   Reasons: mood match (+1.0); energy closeness (+1.5); acoustic preference (+0.3)
+5. Spacewalk Thoughts — Orbit Bloom
+   Score: 2.8
+   Reasons: mood match (+1.0); energy closeness (+1.4); acoustic preference (+0.4)
+```
+
+### Deep Intense Rock
+
+```text
+Profile: Deep Intense Rock
+Preferences: genre=rock, mood=intense, energy=0.90, likes_acoustic=no
+1. Storm Runner — Voltline
+   Score: 4.9
+   Reasons: genre match (+2.0); mood match (+1.0); energy closeness (+1.5); acoustic preference (+0.4)
+2. Gym Hero — Max Pulse
+   Score: 3.0
+   Reasons: mood match (+1.0); energy closeness (+1.5); acoustic preference (+0.5)
+3. Iron Horizon — Grave Circuit
+   Score: 1.9
+   Reasons: energy closeness (+1.4); acoustic preference (+0.5)
+4. Carnival Lights — Sol Mar
+   Score: 1.7
+   Reasons: energy closeness (+1.4); acoustic preference (+0.3)
+5. Sunrise City — Neon Echo
+   Score: 1.7
+   Reasons: energy closeness (+1.4); acoustic preference (+0.3)
+```
+
+### Restless Sad
+
+```text
+Profile: Restless Sad
+Preferences: genre=pop, mood=sad, energy=0.90, likes_acoustic=no
+Note: edge case: energy 0.90 with a sad mood
+1. Gym Hero — Max Pulse
+   Score: 4.0
+   Reasons: genre match (+2.0); energy closeness (+1.5); acoustic preference (+0.5)
+2. Sunrise City — Neon Echo
+   Score: 3.7
+   Reasons: genre match (+2.0); energy closeness (+1.4); acoustic preference (+0.3)
+3. Iron Horizon — Grave Circuit
+   Score: 1.9
+   Reasons: energy closeness (+1.4); acoustic preference (+0.5)
+4. Storm Runner — Voltline
+   Score: 1.9
+   Reasons: energy closeness (+1.5); acoustic preference (+0.4)
+5. Carnival Lights — Sol Mar
+   Score: 1.7
+   Reasons: energy closeness (+1.4); acoustic preference (+0.3)
+```
 
 ---
 
 ## Experiments You Tried
 
-Use this section to document the experiments you ran. For example:
+I ran one sensitivity experiment. I halved the genre weight from +2.0 to +1.0 and doubled the energy weight from +1.5 to +3.0. The mood weight stayed at +1.0, and the acoustic weight stayed at +1.0. I ranked the same four profiles again, then put the original weights back. The code in `src/recommender.py` still uses the defaults, because this run did not show a clear improvement.
 
-- What happened when you changed the weight on genre from 2.0 to 0.5
-- What happened when you added tempo or valence to the score
-- How did your system behave for different types of users
+### High-Energy Pop
+
+Before: Sunrise City 4.7, Gym Hero 4.0, Carnival Lights 2.7, Rooftop Lights 2.5, Iron Horizon 1.9.
+
+After: Sunrise City 5.1, Gym Hero 4.4, Carnival Lights 4.1, Rooftop Lights 3.8, Storm Runner 3.4.
+
+The first four songs stayed in the same order. Fifth place changed from Iron Horizon (metal, angry, energy 0.96) to Storm Runner (rock, intense, energy 0.91). Storm Runner is only 0.01 away from the target, and Iron Horizon is 0.06 away, so the heavier energy term picked the nearer song. The two pop songs still led the list.
+
+### Chill Lofi
+
+Before: Library Rain 4.9, Midnight Coding 4.6, Focus Flow 3.7, Pine Smoke 2.8, Spacewalk Thoughts 2.8.
+
+After: Library Rain 5.4, Midnight Coding 5.0, Pine Smoke 4.3, Spacewalk Thoughts 4.2, Focus Flow 4.1.
+
+Focus Flow is lofi, but its mood is focused rather than chill. Pine Smoke is folk and chill, and its energy is 0.36 against a target of 0.35. With a smaller genre bonus, those closer chill songs moved ahead of the extra lofi track. That follows the new weights. It is a worse list for someone whose favorite genre is lofi, because a folk song jumped over a lofi song.
+
+### Deep Intense Rock
+
+Before: Storm Runner 4.9, Gym Hero 3.0, Iron Horizon 1.9, Carnival Lights 1.7, Sunrise City 1.7.
+
+After: Storm Runner 5.4, Gym Hero 4.4, Iron Horizon 3.3, Carnival Lights 3.1, Sunrise City 3.1.
+
+The order did not change. The scores rose because Storm Runner and Gym Hero were already very close to energy 0.90.
+
+### Restless Sad
+
+Before: Gym Hero 4.0, Sunrise City 3.7, Iron Horizon 1.9, Storm Runner 1.9, Carnival Lights 1.7. The sad songs were lower: Rain On The Platform at rank 10 with 1.3, and Blue Window at rank 11 with 1.2.
+
+After: Gym Hero 4.4, Sunrise City 4.1, Storm Runner 3.4, Iron Horizon 3.3, Carnival Lights 3.1. Rain On The Platform fell to rank 11 with 2.0, and Blue Window fell to rank 12 with 1.8.
+
+The top 5 still contains no sad song. Those two songs are slow (energy 0.33 and 0.30), so a heavier energy weight pushes them further down. Cutting the genre bonus in half was not enough to unseat Gym Hero or Sunrise City.
+
+I kept the default weights. The new mix did not repair the sad high-energy profile, and it made the chill list less loyal to lofi.
 
 ---
 
 ## Limitations and Risks
 
-Summarize some limitations of your recommender.
+The catalog has 20 songs. Several genres appear only once, so a rock listener gets a single true genre match and the rest of the list is filler. The model does not read lyrics, language, or anyone's play history. `tempo_bpm`, `valence`, and `danceability` are stored and then ignored. Genre labels have to match exactly, so `indie pop` is not `pop`.
 
-Examples:
-
-- It only works on a tiny catalog
-- It does not understand lyrics or language
-- It might over favor one genre or mood
-
-You will go deeper on this in your model card.
+The biggest scoring risk is the +2.0 genre bonus. On the Restless Sad profile the request is pop, sad, and energy 0.90, and the top 5 are still intense or happy songs with high energy. The only sad songs in the catalog land outside the top 5. Equal scores are also broken by title, which is why Iron Horizon can appear ahead of Storm Runner when the points match. The model card goes into more detail.
 
 ---
 
@@ -142,10 +244,9 @@ Read and complete `model_card.md`:
 
 [**Model Card**](model_card.md)
 
-Write 1 to 2 paragraphs here about what you learned:
+I learned that this recommender does not hear the music. It turns each song into tags and a few numbers, adds points when those tags match a profile, and sorts the list. The printed reasons made that visible. On High-Energy Pop, Sunrise City scores 4.7 because 2.0 + 1.0 + 1.4 + 0.3 adds up.
 
-- about how recommenders turn data into predictions
-- about where bias or unfairness could show up in systems like this
+The unfair part showed up on a profile I expected to be sad. Restless Sad still recommended Gym Hero, an intense pop song, and left the two sad songs outside the top 5. Genre was worth more than mood, and the catalog had no sad pop song with high energy. Raising the energy weight did not fix that. It pushed the slow sad songs further down. The longer reflection is in the model card.
 
 
 
