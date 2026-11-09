@@ -4,12 +4,18 @@ import csv
 from dataclasses import asdict, dataclass
 from typing import Dict, List, Tuple
 
+from tabulate import tabulate
+
 # Default Algorithm Recipe weights. A sensitivity run may change these
 # temporarily, but the shipped values stay here.
 GENRE_MATCH = 2.0
 MOOD_MATCH = 1.0
 ENERGY_WEIGHT = 1.5
 ACOUSTIC_WEIGHT = 1.0
+
+# Used only when the diversity switch is on.
+ARTIST_REPEAT_PENALTY = 1.5
+GENRE_REPEAT_PENALTY = 0.8
 
 INT_FIELDS = ("id", "tempo_bpm")
 FLOAT_FIELDS = ("energy", "valence", "danceability", "acousticness")
@@ -48,12 +54,13 @@ class Recommender:
         """Store the songs this recommender is allowed to rank."""
         self.songs = songs
 
-    def recommend(self, user: UserProfile, k: int = 5) -> List[Song]:
+    def recommend(self, user: UserProfile, k: int = 5, diversity: bool = False) -> List[Song]:
         """Return the top k songs for this user, highest score first."""
         picked = recommend_songs(
             _prefs_from_profile(user),
             [_song_to_dict(song) for song in self.songs],
             k=k,
+            diversity=diversity,
         )
         by_id = {song.id: song for song in self.songs}
         return [by_id[item[0]["id"]] for item in picked]
@@ -117,7 +124,7 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
 
 
 def recommend_songs(
-    user_prefs: Dict, songs: List[Dict], k: int = 5
+    user_prefs: Dict, songs: List[Dict], k: int = 5, diversity: bool = False
 ) -> List[Tuple[Dict, float, str]]:
     """Score every song and return the top k from highest to lowest."""
     if k <= 0:
@@ -128,8 +135,64 @@ def recommend_songs(
         points, reasons = score_song(user_prefs, song_dict)
         ranked.append((song_dict, points, reasons))
     ranked.sort(key=lambda item: (-item[1], str(item[0].get("title", "")).casefold()))
-    chosen = ranked[:k]
+    if diversity:
+        chosen = _pick_diverse(ranked, k)
+    else:
+        chosen = ranked[:k]
     return [(song, points, "; ".join(reasons)) for song, points, reasons in chosen]
+
+
+def format_summary_table(recommendations: List[Tuple[Dict, float, str]]) -> str:
+    """Build a text table of titles, scores, and reasons."""
+    rows = [
+        [song["title"], song["artist"], f"{score:.1f}", reasons]
+        for song, score, reasons in recommendations
+    ]
+    return tabulate(
+        rows,
+        headers=["Title", "Artist", "Score", "Reasons"],
+        tablefmt="simple",
+    )
+
+
+def _pick_diverse(ranked, k: int):
+    """Greedy top-k that penalizes a repeated artist or genre."""
+    pool = [(song, score, list(reasons)) for song, score, reasons in ranked]
+    selected = []
+    artist_counts: Dict[str, int] = {}
+    genre_counts: Dict[str, int] = {}
+    while pool and len(selected) < k:
+        best_index = None
+        best_key = None
+        best_adjusted = 0.0
+        best_hits = (0, 0)
+        for index, (song, score, _reasons) in enumerate(pool):
+            artist_hits = artist_counts.get(str(song.get("artist", "")), 0)
+            genre_hits = genre_counts.get(str(song.get("genre", "")), 0)
+            penalty = (ARTIST_REPEAT_PENALTY * artist_hits) + (
+                GENRE_REPEAT_PENALTY * genre_hits
+            )
+            adjusted = round(score - penalty, 1)
+            key = (-adjusted, str(song.get("title", "")).casefold())
+            if best_key is None or key < best_key:
+                best_key = key
+                best_index = index
+                best_adjusted = adjusted
+                best_hits = (artist_hits, genre_hits)
+        song, _score, reasons = pool.pop(best_index)
+        artist_hits, genre_hits = best_hits
+        if artist_hits:
+            artist_points = -ARTIST_REPEAT_PENALTY * artist_hits
+            reasons.append(f"repeat artist penalty ({artist_points:+.1f})")
+        if genre_hits:
+            genre_points = -GENRE_REPEAT_PENALTY * genre_hits
+            reasons.append(f"repeat genre penalty ({genre_points:+.1f})")
+        selected.append((song, best_adjusted, reasons))
+        artist = str(song.get("artist", ""))
+        genre = str(song.get("genre", ""))
+        artist_counts[artist] = artist_hits + 1
+        genre_counts[genre] = genre_hits + 1
+    return selected
 
 
 def _song_to_dict(song: Song) -> Dict:

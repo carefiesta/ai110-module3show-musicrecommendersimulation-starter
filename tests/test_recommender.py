@@ -6,6 +6,7 @@ from src.recommender import (
     Recommender,
     Song,
     UserProfile,
+    format_summary_table,
     load_songs,
     recommend_songs,
     score_song,
@@ -192,3 +193,43 @@ def test_recommend_songs_caps_k_on_the_real_catalog():
     scores = [item[1] for item in top_five]
     assert scores == sorted(scores, reverse=True)
     assert top_two[0][0]["title"] == top_five[0][0]["title"]
+
+
+def test_diversity_penalty_discourages_a_repeated_artist():
+    songs = [
+        _song(id=1, title="First", artist="Same", genre="pop", mood="happy", energy=0.80),
+        _song(id=2, title="Second", artist="Same", genre="pop", mood="happy", energy=0.60),
+        _song(id=3, title="Other", artist="Else", genre="pop", mood="happy", energy=0.55),
+    ]
+    prefs = {"genre": "pop", "mood": "happy", "energy": 0.80}
+    plain = recommend_songs(prefs, songs, k=2, diversity=False)
+    diverse = recommend_songs(prefs, songs, k=2, diversity=True)
+    assert [item[0]["artist"] for item in plain] == ["Same", "Same"]
+    assert [item[0]["artist"] for item in diverse] == ["Same", "Else"]
+    assert "repeat artist penalty" not in diverse[0][2]
+    assert "repeat genre penalty (-0.8)" in diverse[1][2]
+    assert diverse[0][1] >= diverse[1][1]
+
+
+def test_diversity_switch_limits_loroom_on_the_chill_profile():
+    songs = load_songs(str(CATALOG))
+    prefs = {"genre": "lofi", "mood": "chill", "energy": 0.35, "likes_acoustic": True}
+    plain = recommend_songs(prefs, songs, k=5, diversity=False)
+    diverse = recommend_songs(prefs, songs, k=5, diversity=True)
+    plain_artists = [item[0]["artist"] for item in plain]
+    diverse_artists = [item[0]["artist"] for item in diverse]
+    assert plain_artists.count("LoRoom") == 2
+    assert diverse_artists.count("LoRoom") == 1
+
+
+def test_format_summary_table_includes_the_reasons():
+    songs = [
+        _song(id=2, title="Best", genre="pop", mood="happy", energy=0.8),
+        _song(id=3, title="Other", genre="jazz", mood="sad", energy=0.1),
+    ]
+    prefs = {"genre": "pop", "mood": "happy", "energy": 0.8}
+    table = format_summary_table(recommend_songs(prefs, songs, k=1))
+    assert "Best" in table
+    assert "Score" in table
+    assert "genre match (+2.0)" in table
+    assert "mood match (+1.0)" in table

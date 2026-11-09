@@ -46,6 +46,10 @@ Each rule that changes the score adds a reason such as `genre match (+2.0)`.
 
 The genre bonus is the largest single step, so the recipe over-prioritizes genre. A song in the favorite genre can outrank a song that fits the mood and the energy target more closely. Genre labels are exact, so `indie pop` does not count as `pop`.
 
+### Optional diversity penalty
+
+The diversity penalty is off by default. Pass `diversity=True` to turn it on. A song loses 1.5 points for each earlier pick with the same artist, and 0.8 points for each earlier pick with the same genre. The four sample profiles leave the switch off. The optional-extensions section shows Chill Lofi with the switch on.
+
 ---
 
 ## Getting Started
@@ -80,17 +84,17 @@ From the project folder, run:
 python -m pytest
 ```
 
-The tests cover `load_songs`, the genre and mood points in `score_song`, energy closeness, ranking order, and the `k` limit. This is the passing output from that command:
+The tests cover `load_songs`, the genre and mood points in `score_song`, energy closeness, ranking order, the `k` limit, the diversity switch, and the summary table. This is the passing output from that command:
 
 ```text
 ============================= test session starts ==============================
 platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0
 rootdir: /workspace
-collected 9 items
+collected 12 items
 
-tests/test_recommender.py .........                                      [100%]
+tests/test_recommender.py ............                                   [100%]
 
-============================== 9 passed in 0.01s ===============================
+============================== 12 passed in 0.02s ==============================
 ```
 
 ---
@@ -235,6 +239,59 @@ I kept the default weights. The new mix did not repair the sad high-energy profi
 The catalog has 20 songs. Several genres appear only once, so a rock listener gets a single true genre match and the rest of the list is filler. The model does not read lyrics, language, or anyone's play history. `tempo_bpm`, `valence`, and `danceability` are stored and then ignored. Genre labels have to match exactly, so `indie pop` is not `pop`.
 
 The biggest scoring risk is the +2.0 genre bonus. On the Restless Sad profile the request is pop, sad, and energy 0.90, and the top 5 are still intense or happy songs with high energy. The only sad songs in the catalog land outside the top 5. Equal scores are also broken by title, which is why Iron Horizon can appear ahead of Storm Runner when the points match. The model card goes into more detail.
+
+---
+
+## Optional Extensions
+
+Two optional pieces are included. The normal top 5 lists leave the diversity switch off.
+
+The diversity penalty (challenge 3) discourages a repeated artist or a repeated genre. On Chill Lofi the default list has two LoRoom songs, Midnight Coding and Focus Flow. With the switch on, Focus Flow drops out. Midnight Coding stays, with a repeat-genre penalty of -0.8, so its score falls from 4.6 to 3.8. The new fifth song is Coffee Shop Stories, which is jazz. That swap is why the switch stays off unless you ask for it. A repeated artist costs 1.5 points per earlier pick, and a repeated genre costs 0.8.
+
+The summary table (challenge 4) uses `tabulate` to print the title, artist, score, and reasons. `tabulate` is listed in `requirements.txt`.
+
+```text
+Diversity penalty: on
+Profile: Chill Lofi
+Preferences: genre=lofi, mood=chill, energy=0.35, likes_acoustic=yes
+1. Library Rain — Paper Lanterns
+   Score: 4.9
+   Reasons: genre match (+2.0); mood match (+1.0); energy closeness (+1.5); acoustic preference (+0.4)
+2. Midnight Coding — LoRoom
+   Score: 3.8
+   Reasons: genre match (+2.0); mood match (+1.0); energy closeness (+1.4); acoustic preference (+0.2); repeat genre penalty (-0.8)
+3. Pine Smoke — Cedar Line
+   Score: 2.8
+   Reasons: mood match (+1.0); energy closeness (+1.5); acoustic preference (+0.3)
+4. Spacewalk Thoughts — Orbit Bloom
+   Score: 2.8
+   Reasons: mood match (+1.0); energy closeness (+1.4); acoustic preference (+0.4)
+5. Coffee Shop Stories — Slow Stereo
+   Score: 1.9
+   Reasons: energy closeness (+1.5); acoustic preference (+0.4)
+```
+
+```text
+Summary table: Chill Lofi (diversity off)
+Title               Artist            Score  Reasons
+------------------  --------------  -------  ------------------------------------------------------------------------------------------
+Library Rain        Paper Lanterns      4.9  genre match (+2.0); mood match (+1.0); energy closeness (+1.5); acoustic preference (+0.4)
+Midnight Coding     LoRoom              4.6  genre match (+2.0); mood match (+1.0); energy closeness (+1.4); acoustic preference (+0.2)
+Focus Flow          LoRoom              3.7  genre match (+2.0); energy closeness (+1.4); acoustic preference (+0.3)
+Pine Smoke          Cedar Line          2.8  mood match (+1.0); energy closeness (+1.5); acoustic preference (+0.3)
+Spacewalk Thoughts  Orbit Bloom         2.8  mood match (+1.0); energy closeness (+1.4); acoustic preference (+0.4)
+```
+
+```text
+Summary table: Chill Lofi (diversity on)
+Title                Artist            Score  Reasons
+-------------------  --------------  -------  -----------------------------------------------------------------------------------------------------------------------
+Library Rain         Paper Lanterns      4.9  genre match (+2.0); mood match (+1.0); energy closeness (+1.5); acoustic preference (+0.4)
+Midnight Coding      LoRoom              3.8  genre match (+2.0); mood match (+1.0); energy closeness (+1.4); acoustic preference (+0.2); repeat genre penalty (-0.8)
+Pine Smoke           Cedar Line          2.8  mood match (+1.0); energy closeness (+1.5); acoustic preference (+0.3)
+Spacewalk Thoughts   Orbit Bloom         2.8  mood match (+1.0); energy closeness (+1.4); acoustic preference (+0.4)
+Coffee Shop Stories  Slow Stereo         1.9  energy closeness (+1.5); acoustic preference (+0.4)
+```
 
 ---
 

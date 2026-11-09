@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from src.recommender import load_songs, recommend_songs
+from src.recommender import format_summary_table, load_songs, recommend_songs
 
 # Three taste profiles, plus one edge case whose mood and energy disagree.
 PROFILES = [
@@ -71,6 +71,23 @@ def main() -> None:
             print(f"Note: {profile['note']}")
         recommendations = recommend_songs(profile, songs, k=5)
         _print_recommendations(recommendations)
+
+    chill = PROFILES[1]
+    print()
+    print("Diversity penalty: on")
+    print(f"Profile: {chill['name']}")
+    print(f"Preferences: {_preference_line(chill)}")
+    diverse = recommend_songs(chill, songs, k=5, diversity=True)
+    _print_recommendations(diverse)
+
+    print()
+    print("Summary table: Chill Lofi (diversity off)")
+    plain = recommend_songs(chill, songs, k=5, diversity=False)
+    print(format_summary_table(plain))
+
+    print()
+    print("Summary table: Chill Lofi (diversity on)")
+    print(format_summary_table(diverse))
 
 
 if __name__ == "__main__":

@@ -52,7 +52,7 @@ The reasons add up to the printed score. For Sunrise City on the pop profile, 2.
 
 The clearest weakness is that a genre bonus plus a hole in the catalog can erase a mood request. Restless Sad asks for pop songs that feel sad at energy 0.90, and the catalog has no song that is pop and sad. The only sad songs are Blue Window (folk, energy 0.30) and Rain On The Platform (blues, energy 0.33), so they earn the +1.0 mood point and then lose on energy. Gym Hero is intense, not sad, but the +2.0 pop bonus and a near-perfect energy score give it 4.0 and first place, while Rain On The Platform scores 1.3 and lands at rank 10. Doubling the energy weight in the sensitivity run pushed those sad songs even lower, to ranks 11 and 12, so a bigger energy weight did not fix the hole.
 
-Other limits showed up too. `indie pop` does not count as `pop`, so Rooftop Lights misses the genre bonus. Equal scores are broken by title, which is why Iron Horizon appears as the fifth High-Energy Pop song ahead of Storm Runner at the same 1.9. Chill Lofi also ranks two LoRoom songs in a row.
+Other limits showed up too. `indie pop` does not count as `pop`, so Rooftop Lights misses the genre bonus. Equal scores are broken by title, which is why Iron Horizon appears as the fifth High-Energy Pop song ahead of Storm Runner at the same 1.9. Chill Lofi also ranks two LoRoom songs in a row. An optional diversity switch can drop the second LoRoom song. I leave it off, because the song that replaced it was Coffee Shop Stories, which is jazz rather than lofi.
 
 ---
 
@@ -82,7 +82,7 @@ I would use tempo or valence in the score. Those columns are already in the file
 
 I would treat a near genre as a partial match. Rooftop Lights is tagged `indie pop`, so a pop listener gets no genre points for it.
 
-I would add a penalty when the top list repeats an artist or a genre. Chill Lofi currently places Midnight Coding and Focus Flow, two LoRoom songs, in a row.
+The diversity switch now exists, and it stays off unless a caller turns it on. A useful next step is to decide when that penalty should turn on by itself. On Chill Lofi it removed the extra LoRoom song, and it also let a jazz song into the top 5.
 
 ---
 
@@ -102,4 +102,4 @@ The Chill Lofi list felt like a real playlist: Library Rain, then Midnight Codin
 
 ### What would you try next?
 
-I would add the tempo and valence columns to the score, since they are already loaded and unused. I would also try a softer genre match so `indie pop` is not a total miss for a pop listener, and a penalty so the chill list does not stack two LoRoom songs. The weight experiment taught me to print the before and after lists before I keep a change.
+After the first Chill Lofi list, I saw two LoRoom songs in a row. I added an optional diversity penalty for a repeated artist or a repeated genre. With the switch on, Focus Flow dropped out and Coffee Shop Stories, a jazz song, took the last spot, so I left the switch off for the normal profiles. Next I would use the tempo and valence columns, which are loaded and still ignored, and I would try a partial point when the genre is close, such as indie pop for a pop listener. The weight experiment taught me to print the before and after lists before I keep a change.
