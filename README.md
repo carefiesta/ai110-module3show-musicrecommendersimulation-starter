@@ -74,13 +74,24 @@ python -m src.main
 
 ### Running Tests
 
-Run the starter tests with:
+From the project folder, run:
 
 ```bash
-pytest
+python -m pytest
 ```
 
-You can add more tests in `tests/test_recommender.py`.
+The tests cover `load_songs`, the genre and mood points in `score_song`, energy closeness, ranking order, and the `k` limit. This is the passing output from that command:
+
+```text
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0
+rootdir: /workspace
+collected 9 items
+
+tests/test_recommender.py .........                                      [100%]
+
+============================== 9 passed in 0.01s ===============================
+```
 
 ---
 
